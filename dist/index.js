@@ -222,6 +222,7 @@ const dotnet_trx_parser_1 = __nccwpck_require__(2664);
 const java_junit_parser_1 = __nccwpck_require__(676);
 const jest_junit_parser_1 = __nccwpck_require__(1113);
 const mocha_json_parser_1 = __nccwpck_require__(6043);
+const mochawesome_json_parser_1 = __nccwpck_require__(4024);
 const path_utils_1 = __nccwpck_require__(4070);
 const github_utils_1 = __nccwpck_require__(3522);
 const markdown_utils_1 = __nccwpck_require__(6482);
@@ -381,6 +382,8 @@ class TestReporter {
                 return new jest_junit_parser_1.JestJunitParser(options);
             case 'mocha-json':
                 return new mocha_json_parser_1.MochaJsonParser(options);
+            case 'mochawesome-json':
+                return new mochawesome_json_parser_1.MochawesomeJsonParser(options);
             default:
                 throw new Error(`Input variable 'reporter' is set to invalid value '${reporter}'`);
         }
@@ -1229,6 +1232,114 @@ class MochaJsonParser {
     }
 }
 exports.MochaJsonParser = MochaJsonParser;
+
+
+/***/ }),
+
+/***/ 4024:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MochawesomeJsonParser = void 0;
+const test_results_1 = __nccwpck_require__(2768);
+const node_utils_1 = __nccwpck_require__(5824);
+const path_utils_1 = __nccwpck_require__(4070);
+class MochawesomeJsonParser {
+    constructor(options) {
+        this.options = options;
+    }
+    async parse(path, content) {
+        const mochawesome = this.getMochawesomeJson(path, content);
+        const result = this.getTestRunResult(path, mochawesome);
+        result.sort(true);
+        return Promise.resolve(result);
+    }
+    getMochawesomeJson(path, content) {
+        try {
+            return JSON.parse(content);
+        }
+        catch (e) {
+            throw new Error(`Invalid JSON at ${path}\n\n${e}`);
+        }
+    }
+    getTestRunResult(resultsPath, mochawesome) {
+        const suitesMap = {};
+        if (mochawesome.results.length > 0 &&
+            mochawesome.results[0].suites.length > 0 &&
+            mochawesome.results[0].suites[0].tests.length > 0) {
+            const filePath = mochawesome.results[0].fullFile;
+            const tests = mochawesome.results[0].suites[0].tests;
+            const getSuite = () => {
+                var _a;
+                const path = this.getRelativePath(filePath);
+                return (_a = suitesMap[path]) !== null && _a !== void 0 ? _a : (suitesMap[path] = new test_results_1.TestSuiteResult(path, []));
+            };
+            for (const currentTest of tests.filter(test => test.pass)) {
+                const suite = getSuite();
+                this.processTest(suite, currentTest, 'success');
+            }
+            for (const currentTest of tests.filter(test => test.fail)) {
+                const suite = getSuite();
+                this.processTest(suite, currentTest, 'failed');
+            }
+            for (const currentTest of tests.filter(test => test.pending)) {
+                const suite = getSuite();
+                this.processTest(suite, currentTest, 'skipped');
+            }
+        }
+        const suites = Object.values(suitesMap);
+        return new test_results_1.TestRunResult(resultsPath, suites, mochawesome.stats.duration);
+    }
+    processTest(suite, test, result) {
+        var _a;
+        const groupName = test.fullTitle !== test.title
+            ? test.fullTitle.substr(0, test.fullTitle.length - test.title.length).trimEnd()
+            : null;
+        let group = suite.groups.find(grp => grp.name === groupName);
+        if (group === undefined) {
+            group = new test_results_1.TestGroupResult(groupName, []);
+            suite.groups.push(group);
+        }
+        const error = this.getTestCaseError(test);
+        const testCase = new test_results_1.TestCaseResult(test.title, result, (_a = test.duration) !== null && _a !== void 0 ? _a : 0, error);
+        group.tests.push(testCase);
+    }
+    getTestCaseError(test) {
+        const details = test.err.estack;
+        const message = test.err.message;
+        if (details === undefined) {
+            return undefined;
+        }
+        let path;
+        let line;
+        const src = node_utils_1.getExceptionSource(details, this.options.trackedFiles, file => this.getRelativePath(file));
+        if (src) {
+            path = src.path;
+            line = src.line;
+        }
+        return {
+            path,
+            line,
+            message,
+            details
+        };
+    }
+    getRelativePath(path) {
+        path = path_utils_1.normalizeFilePath(path);
+        const workDir = this.getWorkDir(path);
+        if (workDir !== undefined && path.startsWith(workDir)) {
+            path = path.substr(workDir.length);
+        }
+        return path;
+    }
+    getWorkDir(path) {
+        var _a, _b;
+        return ((_b = (_a = this.options.workDir) !== null && _a !== void 0 ? _a : this.assumedWorkDir) !== null && _b !== void 0 ? _b : (this.assumedWorkDir = path_utils_1.getBasePath(path, this.options.trackedFiles)));
+    }
+}
+exports.MochawesomeJsonParser = MochawesomeJsonParser;
 
 
 /***/ }),

@@ -43,25 +43,26 @@ describe('mochawesome-json tests', () => {
     fs.writeFileSync(outputPath, report)
   })
 
-  it('report from mochawesomejs/mochawesome test results matches snapshot', async () => {
-    const fixturePath = path.join(__dirname, 'fixtures', 'external', 'mochawesome', 'mochawesome-test-results.json')
-    const trackedFilesPath = path.join(__dirname, 'fixtures', 'external', 'mochawesome', 'files.txt')
-    const outputPath = path.join(__dirname, '__outputs__', 'mochawesome-test-results.md')
-    const filePath = normalizeFilePath(path.relative(__dirname, fixturePath))
-    const fileContent = fs.readFileSync(fixturePath, {encoding: 'utf8'})
+  // TODO - External
+  // it('report from mochawesomejs/mochawesome test results matches snapshot', async () => {
+  //   const fixturePath = path.join(__dirname, 'fixtures', 'external', 'mochawesome', 'mochawesome-test-results.json')
+  //   const trackedFilesPath = path.join(__dirname, 'fixtures', 'external', 'mochawesome', 'files.txt')
+  //   const outputPath = path.join(__dirname, '__outputs__', 'mochawesome-test-results.md')
+  //   const filePath = normalizeFilePath(path.relative(__dirname, fixturePath))
+  //   const fileContent = fs.readFileSync(fixturePath, {encoding: 'utf8'})
 
-    const trackedFiles = fs.readFileSync(trackedFilesPath, {encoding: 'utf8'}).split(/\n\r?/g)
-    const opts: ParseOptions = {
-      parseErrors: true,
-      trackedFiles
-    }
+  //   const trackedFiles = fs.readFileSync(trackedFilesPath, {encoding: 'utf8'}).split(/\n\r?/g)
+  //   const opts: ParseOptions = {
+  //     parseErrors: true,
+  //     trackedFiles
+  //   }
 
-    const parser = new MochawesomeJsonParser(opts)
-    const result = await parser.parse(filePath, fileContent)
-    expect(result).toMatchSnapshot()
+  //   const parser = new MochawesomeJsonParser(opts)
+  //   const result = await parser.parse(filePath, fileContent)
+  //   expect(result).toMatchSnapshot()
 
-    const report = getReport([result])
-    fs.mkdirSync(path.dirname(outputPath), {recursive: true})
-    fs.writeFileSync(outputPath, report)
-  })
+  //   const report = getReport([result])
+  //   fs.mkdirSync(path.dirname(outputPath), {recursive: true})
+  //   fs.writeFileSync(outputPath, report)
+  // })
 })

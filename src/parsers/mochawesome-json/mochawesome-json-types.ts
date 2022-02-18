@@ -1,39 +1,33 @@
 export interface MochawesomeJson {
-  stats: MochawesomeJsonStats
-  passes: MochawesomeJsonTest[]
-  pending: MochawesomeJsonTest[]
-  failures: MochawesomeJsonTest[]
+  stats: MochawesomeJsonStat
+  results: MochawesomeJsonResult[]
 }
 
-export interface MochawesomeJsonStats {
+export interface MochawesomeJsonStat {
   duration: number
 }
 
-export interface MochawesomeJsonResults {
-  title: string
-  file: string
-  duration?: number
-  suites: MochawesomeJsonSuites
+export interface MochawesomeJsonResult {
+  suites: MochawesomeJsonSuite[]
+  fullFile: string
 }
 
-export interface MochawesomeJsonSuites {
-  title: string
-  duration?: number
-  tests: MochawesomeJsonTest
+export interface MochawesomeJsonSuite {
+  tests: MochawesomeJsonTest[]
 }
 
 export interface MochawesomeJsonTest {
   title: string
   fullTitle: string
-  duration?: number
-  code: string
-  state: string
-  file: MochawesomeJsonResults["file"]
+  duration: number
+  pass: boolean
+  fail: boolean
+  pending: boolean
   err: MochawesomeJsonTestError
-  suites: MochawesomeJsonResults["suites"]
 }
 
 export interface MochawesomeJsonTestError {
-  estack?: string
-  message?: string
+  message: string
+  estack: string
+  diff: string | null // TODO - Not sure if string
 }

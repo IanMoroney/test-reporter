@@ -9,7 +9,7 @@ import {
 } from '../../test-results'
 import {getExceptionSource} from '../../utils/node-utils'
 import {getBasePath, normalizeFilePath} from '../../utils/path-utils'
-import {MochawesomeJson, MochawesomeJsonTest, MochawesomeJsonResults, MochawesomeJsonSuites} from './mochawesome-json-types'
+import {MochawesomeJson, MochawesomeJsonTest} from './mochawesome-json-types'
 
 export class MochawesomeJsonParser implements TestParser {
   assumedWorkDir: string | undefined
@@ -34,24 +34,33 @@ export class MochawesomeJsonParser implements TestParser {
   private getTestRunResult(resultsPath: string, mochawesome: MochawesomeJson): TestRunResult {
     const suitesMap: {[path: string]: TestSuiteResult} = {}
 
-    const getSuite = (test: MochawesomeJsonResults): TestSuiteResult => {
-      const path = this.getRelativePath(test.file)
-      return suitesMap[path] ?? (suitesMap[path] = new TestSuiteResult(path, []))
-    }
+    if (
+      mochawesome.results.length > 0 &&
+      mochawesome.results[0].suites.length > 0 &&
+      mochawesome.results[0].suites[0].tests.length > 0
+    ) {
+      const filePath = mochawesome.results[0].fullFile
+      const tests = mochawesome.results[0].suites[0].tests
 
-    for (const test of mochawesome.passes) {
-      const suite = getSuite(test)
-      this.processTest(suite, test, 'success')
-    }
+      const getSuite = (): TestSuiteResult => {
+        const path = this.getRelativePath(filePath)
+        return suitesMap[path] ?? (suitesMap[path] = new TestSuiteResult(path, []))
+      }
 
-    for (const test of mochawesome.failures) {
-      const suite = getSuite(test)
-      this.processTest(suite, test, 'failed')
-    }
+      for (const currentTest of tests.filter(test => test.pass)) {
+        const suite = getSuite()
+        this.processTest(suite, currentTest, 'success')
+      }
 
-    for (const test of mochawesome.pending) {
-      const suite = getSuite(test)
-      this.processTest(suite, test, 'skipped')
+      for (const currentTest of tests.filter(test => test.fail)) {
+        const suite = getSuite()
+        this.processTest(suite, currentTest, 'failed')
+      }
+
+      for (const currentTest of tests.filter(test => test.pending)) {
+        const suite = getSuite()
+        this.processTest(suite, currentTest, 'skipped')
+      }
     }
 
     const suites = Object.values(suitesMap)
